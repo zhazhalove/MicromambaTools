@@ -288,17 +288,70 @@ function Invoke-PythonScript {
     }
 }
 
+# <#
+# .SYNOPSIS
+#     Downloads and extracts the micromamba binary to the script's root directory.
+
+# .DESCRIPTION
+#     The `Get-MicromambaBinary` function downloads the latest micromamba binary for Windows (64-bit) from the official source 
+#     and extracts it into the directory where the script is located (`$PSScriptRoot`).
+
+# .EXAMPLE
+#     Get-MicromambaBinary
+#     Downloads and extracts the micromamba binary to `$PSScriptRoot`.
+
+# .NOTES
+#     Ensure that the `tar` command is available in the environment.
+# #>
+# function Get-MicromambaBinary {
+#     param ()
+
+#     $DESTINATIONPATH = $PSScriptRoot
+
+#     # Define the download URL and output file paths
+#     $url = "https://micro.mamba.pm/api/micromamba/win-64/latest"
+#     $downloadPath = Join-Path -Path $DESTINATIONPATH -ChildPath "micromamba.tar.bz2"
+#     $extractPath = $DESTINATIONPATH
+
+#     try {
+#         # Download the micromamba binary
+#         Write-Host "Downloading micromamba binary from $url..." -ForegroundColor Yellow
+#         Invoke-WebRequest -Uri $url -OutFile $downloadPath -UseDefaultCredentials
+#         Write-Host "Download completed. File saved to $downloadPath." -ForegroundColor Green
+
+#         # Extract the tar.bz2 file
+#         Write-Host "Extracting micromamba binary to $extractPath..." -ForegroundColor Yellow
+#         tar xf $downloadPath -C $extractPath
+#         Write-Host "Extraction completed. Files available in $extractPath." -ForegroundColor Green
+#     } catch {
+#         Write-Host "An error occurred: $_" -ForegroundColor Red
+#     } finally {
+#         # Cleanup: Remove the tar.bz2 file
+#         if (Test-Path -Path $downloadPath) {
+#             Write-Host "Cleaning up downloaded file: $downloadPath" -ForegroundColor Yellow
+#             Remove-Item -Path $downloadPath -Force
+#             Write-Host "Cleaning up downloaded file: $PSScriptRoot\info" -ForegroundColor Yellow
+#             Remove-Item -Path $PSScriptRoot\info -Force -Recurse
+#         }
+#     }
+# }
+
 <#
 .SYNOPSIS
     Downloads and extracts the micromamba binary to the script's root directory.
 
 .DESCRIPTION
     The `Get-MicromambaBinary` function downloads the latest micromamba binary for Windows (64-bit) from the official source 
-    and extracts it into the directory where the script is located (`$PSScriptRoot`).
+    and extracts it into the directory where the script is located (`$PSScriptRoot`). It ensures the binary exists at 
+    `$PSScriptRoot\Library\bin\micromamba.exe` after extraction. The function returns `$true` if all operations succeed and 
+    `$false` otherwise.
 
 .EXAMPLE
-    Get-MicromambaBinary
-    Downloads and extracts the micromamba binary to `$PSScriptRoot`.
+    if (Get-MicromambaBinary) {
+        Write-Output "Micromamba downloaded and extracted successfully."
+    } else {
+        Write-Output "Micromamba download or extraction failed."
+    }
 
 .NOTES
     Ensure that the `tar` command is available in the environment.
@@ -312,29 +365,36 @@ function Get-MicromambaBinary {
     $url = "https://micro.mamba.pm/api/micromamba/win-64/latest"
     $downloadPath = Join-Path -Path $DESTINATIONPATH -ChildPath "micromamba.tar.bz2"
     $extractPath = $DESTINATIONPATH
+    $binaryPath = Join-Path -Path $DESTINATIONPATH -ChildPath "Library\bin\micromamba.exe"
 
     try {
         # Download the micromamba binary
-        Write-Host "Downloading micromamba binary from $url..." -ForegroundColor Yellow
         Invoke-WebRequest -Uri $url -OutFile $downloadPath -UseDefaultCredentials
-        Write-Host "Download completed. File saved to $downloadPath." -ForegroundColor Green
 
         # Extract the tar.bz2 file
-        Write-Host "Extracting micromamba binary to $extractPath..." -ForegroundColor Yellow
         tar xf $downloadPath -C $extractPath
-        Write-Host "Extraction completed. Files available in $extractPath." -ForegroundColor Green
-    } catch {
-        Write-Host "An error occurred: $_" -ForegroundColor Red
-    } finally {
-        # Cleanup: Remove the tar.bz2 file
-        if (Test-Path -Path $downloadPath) {
-            Write-Host "Cleaning up downloaded file: $downloadPath" -ForegroundColor Yellow
-            Remove-Item -Path $downloadPath -Force
-            Write-Host "Cleaning up downloaded file: $PSScriptRoot\info" -ForegroundColor Yellow
-            Remove-Item -Path $PSScriptRoot\info -Force -Recurse
+
+        # Verify the micromamba binary exists
+        if (-not (Test-Path -Path $binaryPath)) {
+            return $false
         }
+
+        # Cleanup: Remove the tar.bz2 file and related files
+        if (Test-Path -Path $downloadPath) {
+            Remove-Item -Path $downloadPath -Force
+        }
+        if (Test-Path -Path "$PSScriptRoot\info") {
+            Remove-Item -Path "$PSScriptRoot\info" -Force -Recurse
+        }
+
+        # Return success
+        return $true
+    } catch {
+        # Return failure
+        return $false
     }
 }
+
 
 <#
 .SYNOPSIS
