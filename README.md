@@ -9,7 +9,7 @@ This PowerShell module simplifies the management of Python environments using Mi
    C:\Users\<user>\Documents\WindowsPowerShell\Modules\
    ```
 
-## Example Usage
+## Usage
 
 ### Step 1: Get Micromamba Binary
 
@@ -48,7 +48,7 @@ Test-MicromambaEnvironment -EnvName "langchain"
 Install required Python packages in the `langchain` environment:
 
 ```powershell
-Install-PackagesInMicromambaEnvironment -EnvName "langchain" -Packages @('langchain', 'langchain-openai', 'typer', 'python-dotenv')
+Install-PackagesInMicromambaEnvironment -EnvName "langchain" -Packages @("langchain", "langchain-openai", "typer", "python-dotenv")
 ```
 
 ### Step 6: Run a Python Script
@@ -56,9 +56,25 @@ Install-PackagesInMicromambaEnvironment -EnvName "langchain" -Packages @('langch
 Invoke a Python script within the `langchain` environment with specific arguments:
 
 ```powershell
-Invoke-PythonScript -ScriptPath "C:\Users\some\path\langchain_organizational_alignment_openai.py" -EnvName "langchain" -Arguments "-i IOCs Multiple alerts generated for an attack technique that has been extensively documented and for which comprehensive mitigation measures are already in place. Threat Intelligence Detailed reports and analysis from cybersecurity communities that have thoroughly covered the attack technique, providing clear guidelines for detection, prevention, and response. Scenario The SIEM system generates numerous alerts related to an attempted SQL injection attack against a web application. This technique is well-documented, and the organization has implemented strong input validation and parameterized queries as recommended mitigations. Despite the high volume of alerts, further investigation confirms that the attempted attacks were effectively neutralized by existing defenses. This scenario underscores the importance of fine-tuning SIEM rules and alert thresholds to focus on emerging threats and reduce the noise from well-understood and adequately mitigated techniques, thereby allowing the security team to allocate resources more efficiently."
+Invoke-PythonScript -ScriptPath "C:\Users\jehu.BUSVILLAGE\Documents\UiPath\openai\langchain_organizational_alignment_openai.py" -EnvName "langchain" -Arguments "-i IOCs Multiple alerts generated for an attack technique that has been extensively documented and for which comprehensive mitigation measures are already in place. Threat Intelligence Detailed reports and analysis from cybersecurity communities that have thoroughly covered the attack technique, providing clear guidelines for detection, prevention, and response. Scenario The SIEM system generates numerous alerts related to an attempted SQL injection attack against a web application. This technique is well-documented, and the organization has implemented strong input validation and parameterized queries as recommended mitigations. Despite the high volume of alerts, further investigation confirms that the attempted attacks were effectively neutralized by existing defenses. This scenario underscores the importance of fine-tuning SIEM rules and alert thresholds to focus on emerging threats and reduce the noise from well-understood and adequately mitigated techniques, thereby allowing the security team to allocate resources more efficiently."
+```
+
+### Optional: Cleanup Micromamba Environment
+
+Remove a specific Micromamba environment and unused cached packages:
+
+```powershell
+Remove-MicromambaEnvironment -EnvName "langchain"
+```
+
+### Optional: Remove Micromamba Executable
+
+Remove the Micromamba executable, its root prefix directory, and unset the MAMBA_ROOT_PREFIX environment variable:
+
+```powershell
+Remove-Micromamba
 ```
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [MIT License]().
