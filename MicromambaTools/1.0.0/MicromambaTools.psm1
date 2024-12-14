@@ -97,11 +97,11 @@ function Install-PackagesInMicromambaEnvironment {
         try {
             if ($TrustedHost) {
                 # Run the install command with trusted hosts
-                & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName pip install $package --trusted-host pypi.org --trusted-host files.pythonhosted.org | Out-Null
+                & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName pip install $package --trusted-host pypi.org --trusted-host files.pythonhosted.org *>&1 | Out-Null
             }
             else {
                 # Run the install command without trusted hosts
-                & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName pip install $package | Out-Null
+                & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName pip install $package *>&1 | Out-Null
             }
 
             # Check if the installation was successful
@@ -176,11 +176,11 @@ function New-MicromambaEnvironment {
 
     if ($TrustedHost) {
         # redirect output since uipath captures the output
-        & "$PSScriptRoot\Library\bin\micromamba.exe" create -n $EnvName --yes --ssl-verify False python=$PythonVersion pip -c conda-forge | Out-Null
+        & "$PSScriptRoot\Library\bin\micromamba.exe" create -n $EnvName --yes --ssl-verify False python=$PythonVersion pip -c conda-forge *>&1 | Out-Null
     }
     else {
         # redirect output since uipath captures the output
-        & "$PSScriptRoot\Library\bin\micromamba.exe" create -n $EnvName --yes python=$PythonVersion pip -c conda-forge | Out-Null
+        & "$PSScriptRoot\Library\bin\micromamba.exe" create -n $EnvName --yes python=$PythonVersion pip -c conda-forge *>&1 | Out-Null
     }
  
     if ($LASTEXITCODE -eq 0) {
@@ -279,7 +279,7 @@ function Invoke-PythonScript {
         $ArgumentString = $Arguments -join ' '
 
         # Execute the Python script with the constructed argument string
-        $finalResult = & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString | ConvertFrom-Json
+        $finalResult = & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString *>&1 | ConvertFrom-Json
 
         return $finalResult
     } catch {
