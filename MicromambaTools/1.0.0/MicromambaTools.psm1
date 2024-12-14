@@ -374,13 +374,43 @@ function Remove-MicromambaEnvironment {
             return $false
         }
 
-        # # Define path for micromamba executable
-        # $micromambaPath = Join-Path -Path $PSScriptRoot -ChildPath "Library\bin\micromamba.exe"
+        return $true
+        
+    } catch {
+        return $false
+    }
+}
 
-        # # Remove micromamba executable
-        # if (Test-Path -Path $micromambaPath) {
-        #     Remove-Item -Path $micromambaPath -Force
-        # }
+
+<#
+.SYNOPSIS
+    Removes the micromamba executable and its Mamba root prefix.
+
+.DESCRIPTION
+    The `Remove-Micromamba` function deletes the `micromamba.exe` binary and the root prefix directory used by micromamba.
+
+.RETURNS
+    [bool] indicating if the removal was successful.
+
+.EXAMPLE
+    Remove-Micromamba
+#>
+function Remove-Micromamba {
+    try {
+        # Define path for micromamba executable
+        $micromambaPath = Join-Path -Path $PSScriptRoot -ChildPath "Library\bin\micromamba.exe"
+        # Define path for micromamba root directory
+        $micromambaRoot = $env:MAMBA_ROOT_PREFIX
+
+        # Remove micromamba executable
+        if (Test-Path -Path $micromambaPath) {
+            Remove-Item -Path $micromambaPath -Force
+        }
+
+        # Remove micromamba root directory
+        if (Test-Path -Path $micromambaRoot) {
+            Remove-Item -Path $micromambaRoot -Force -Recurse
+        }
 
         return $true
     } catch {
