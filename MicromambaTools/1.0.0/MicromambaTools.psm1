@@ -384,10 +384,11 @@ function Remove-MicromambaEnvironment {
 
 <#
 .SYNOPSIS
-    Removes the micromamba executable and its Mamba root prefix.
+    Removes the micromamba executable, its root pefix directory, and unsets the MAMBA_ROOT_PREFIX environment variable.
 
 .DESCRIPTION
-    The `Remove-Micromamba` function deletes the `micromamba.exe` binary and the root prefix directory used by micromamba.
+    The `Remove-Micromamba` function deletes the `micromamba.exe` binary, the root prefix directory used by micromamba,
+    and clears the `MAMBA_ROOT_PREFIX` environment variable.
 
 .RETURNS
     [bool] indicating if the removal was successful.
@@ -412,12 +413,14 @@ function Remove-Micromamba {
             Remove-Item -Path $micromambaRoot -Force -Recurse
         }
 
+        # Unset the MAMBA_ROOT_PREFIX environment variable
+        Remove-Item -Path Env:\MAMBA_ROOT_PREFIX -ErrorAction SilentlyContinue
+
         return $true
     } catch {
         return $false
     }
 }
-
 
 
 Export-ModuleMember -Function Remove-Micromamba, Remove-MicromambaEnvironment Get-MicromambaBinary, Invoke-PythonScript, New-MicromambaEnvironment, Install-PackagesInMicromambaEnvironment, Test-MicromambaEnvironment, Initialize-MambaRootPrefix
