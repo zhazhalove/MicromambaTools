@@ -375,7 +375,7 @@ function Remove-MicromambaEnvironment {
         }
 
         return $true
-        
+
     } catch {
         return $false
     }
@@ -420,4 +420,4 @@ function Remove-Micromamba {
 
 
 
-Export-ModuleMember -Function Remove-MicromambaEnvironment Get-MicromambaBinary, Invoke-PythonScript, New-MicromambaEnvironment, Install-PackagesInMicromambaEnvironment, Test-MicromambaEnvironment, Initialize-MambaRootPrefix
+Export-ModuleMember -Function Remove-Micromamba, Remove-MicromambaEnvironment Get-MicromambaBinary, Invoke-PythonScript, New-MicromambaEnvironment, Install-PackagesInMicromambaEnvironment, Test-MicromambaEnvironment, Initialize-MambaRootPrefix

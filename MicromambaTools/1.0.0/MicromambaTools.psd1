@@ -69,7 +69,7 @@ Description = 'Module for managing micromamba environments'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Remove-MicromambaEnvironment', 'Get-MicromambaBinary', 'Invoke-PythonScript', 'New-MicromambaEnvironment', 'Install-PackagesInMicromambaEnvironment', 'Test-MicromambaEnvironment', 'Initialize-MambaRootPrefix'
+FunctionsToExport = 'Remove-Micromamba', 'Remove-MicromambaEnvironment', 'Get-MicromambaBinary', 'Invoke-PythonScript', 'New-MicromambaEnvironment', 'Install-PackagesInMicromambaEnvironment', 'Test-MicromambaEnvironment', 'Initialize-MambaRootPrefix'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 # CmdletsToExport = '*'
