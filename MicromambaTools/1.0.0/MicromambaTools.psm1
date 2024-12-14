@@ -288,58 +288,6 @@ function Invoke-PythonScript {
     }
 }
 
-# <#
-# .SYNOPSIS
-#     Downloads and extracts the micromamba binary to the script's root directory.
-
-# .DESCRIPTION
-#     The `Get-MicromambaBinary` function downloads the micromamba binary for Windows (64-bit) from the specified source URL 
-#     and extracts it into the directory where the script is located (`$PSScriptRoot`). If no URL is provided, it defaults to 
-#     downloading the latest version from the official source. After extraction, the function checks for the existence of 
-#     `$PSScriptRoot\micromamba.exe` to ensure success.
-
-# .PARAMETER Url
-#     An optional URL to download the micromamba binary. Defaults to:
-#     "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64"
-
-# .EXAMPLE
-#     Get-MicromambaBinary
-#     Downloads and extracts the micromamba binary from the default URL.
-
-# .EXAMPLE
-#     Get-MicromambaBinary -Url "https://example.com/custom/micromamba.tar.bz2"
-#     Downloads and extracts the micromamba binary from a custom URL.
-
-# .NOTES
-#     Ensure that the `tar` command is available in the environment.
-# #>
-# function Get-MicromambaBinary {
-#     param (
-#         [string]$Url = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64"
-#     )
-
-#     $DESTINATIONPATH = $PSScriptRoot
-
-#     # Define output file paths
-#     $downloadPath = Join-Path -Path $DESTINATIONPATH -ChildPath "micromamba.exe"
-
-#     try {
-#         # Download the micromamba binary
-#         Invoke-WebRequest -Uri $Url -OutFile $downloadPath -UseDefaultCredentials
-
-#         # Verify the micromamba binary exists
-#         if (-not (Test-Path -Path $downloadPath)) {
-#             return $false
-#         }
-
-#         # Return success
-#         return $true
-#     } catch {
-#         # Return failure
-#         return $false
-#     }
-# }
-
 
 <#
 .SYNOPSIS
