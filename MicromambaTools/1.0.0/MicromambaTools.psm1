@@ -97,11 +97,11 @@ function Install-PackagesInMicromambaEnvironment {
         try {
             if ($TrustedHost) {
                 # Run the install command with trusted hosts
-                & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName pip install $package --trusted-host pypi.org --trusted-host files.pythonhosted.org | Out-Null
+                & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName pip install $package --trusted-host pypi.org --trusted-host files.pythonhosted.org *>&1 | Out-Null
             }
             else {
                 # Run the install command without trusted hosts
-                & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName pip install $package | Out-Null
+                & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName pip install $package *>&1 | Out-Null
             }
 
             # Check if the installation was successful
@@ -176,11 +176,11 @@ function New-MicromambaEnvironment {
 
     if ($TrustedHost) {
         # redirect output since uipath captures the output
-        & "$PSScriptRoot\Library\bin\micromamba.exe" create -n $EnvName --yes --ssl-verify False python=$PythonVersion pip -c conda-forge | Out-Null
+        & "$PSScriptRoot\Library\bin\micromamba.exe" create -n $EnvName --yes --ssl-verify False python=$PythonVersion pip -c conda-forge *>&1 | Out-Null
     }
     else {
         # redirect output since uipath captures the output
-        & "$PSScriptRoot\Library\bin\micromamba.exe" create -n $EnvName --yes python=$PythonVersion pip -c conda-forge | Out-Null
+        & "$PSScriptRoot\Library\bin\micromamba.exe" create -n $EnvName --yes python=$PythonVersion pip -c conda-forge *>&1 | Out-Null
     }
  
     if ($LASTEXITCODE -eq 0) {
@@ -279,7 +279,7 @@ function Invoke-PythonScript {
         $ArgumentString = $Arguments -join ' '
 
         # Execute the Python script with the constructed argument string
-        $finalResult = & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString | ConvertFrom-Json
+        $finalResult = & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString *>&1 | ConvertFrom-Json
 
         return $finalResult
     } catch {
@@ -336,5 +336,91 @@ function Get-MicromambaBinary {
     }
 }
 
+<#
+.SYNOPSIS
+    Cleans up a micromamba environment and removes the micromamba executable and unused cached packages.
 
-Export-ModuleMember -Function Get-MicromambaBinary, Invoke-PythonScript, New-MicromambaEnvironment, Install-PackagesInMicromambaEnvironment, Test-MicromambaEnvironment, Initialize-MambaRootPrefix
+.DESCRIPTION
+    The `Remove-MicromambaEnvironment` function removes a specified micromamba environment using the `micromamba` tool.
+    Additionally, it deletes the `micromamba.exe` and clears the cached packages using the `micromamba clean --all` command.
+
+.PARAMETER EnvName
+    The name of the micromamba environment to remove.
+
+.RETURNS
+    [bool] indicating if the cleanup was successful.
+
+.EXAMPLE
+    Cleanup-MicromambaEnvironment -EnvName "langchain"
+#>
+function Remove-MicromambaEnvironment {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$EnvName
+    )
+
+    try {
+        # Remove the specified micromamba environment
+        & "$PSScriptRoot\Library\bin\micromamba.exe" env remove -n $EnvName --yes *>&1 | Out-Null
+        
+        if ($LASTEXITCODE -ne 0) {
+            return $false
+        }
+
+        # Clean up cached packages
+        & "$PSScriptRoot\Library\bin\micromamba.exe" clean --all --yes *>&1 | Out-Null
+        
+        if ($LASTEXITCODE -ne 0) {
+            return $false
+        }
+
+        return $true
+
+    } catch {
+        return $false
+    }
+}
+
+
+<#
+.SYNOPSIS
+    Removes the micromamba executable, its root pefix directory, and unsets the MAMBA_ROOT_PREFIX environment variable.
+
+.DESCRIPTION
+    The `Remove-Micromamba` function deletes the `micromamba.exe` binary, the root prefix directory used by micromamba,
+    and clears the `MAMBA_ROOT_PREFIX` environment variable.
+
+.RETURNS
+    [bool] indicating if the removal was successful.
+
+.EXAMPLE
+    Remove-Micromamba
+#>
+function Remove-Micromamba {
+    try {
+        # Define path for micromamba executable
+        $micromambaPath = Join-Path -Path $PSScriptRoot -ChildPath "Library\"
+        # Define path for micromamba root directory
+        $micromambaRoot = $env:MAMBA_ROOT_PREFIX
+
+        # Remove micromamba executable
+        if (Test-Path -Path $micromambaPath) {
+            Remove-Item -Path $micromambaPath -Force -Recurse
+        }
+
+        # Remove micromamba root directory
+        if (Test-Path -Path $micromambaRoot) {
+            Remove-Item -Path $micromambaRoot -Force -Recurse
+        }
+
+        # Unset the MAMBA_ROOT_PREFIX environment variable
+        Remove-Item -Path Env:\MAMBA_ROOT_PREFIX -ErrorAction SilentlyContinue
+
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+
+Export-ModuleMember -Function Remove-Micromamba, Remove-MicromambaEnvironment Get-MicromambaBinary, Invoke-PythonScript, New-MicromambaEnvironment, Install-PackagesInMicromambaEnvironment, Test-MicromambaEnvironment, Initialize-MambaRootPrefix
