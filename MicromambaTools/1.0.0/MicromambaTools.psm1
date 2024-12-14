@@ -300,7 +300,7 @@ function Invoke-PythonScript {
 
 .PARAMETER Url
     An optional URL to download the micromamba binary. Defaults to:
-    "https://micro.mamba.pm/api/micromamba/win-64/latest"
+    "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64"
 
 .EXAMPLE
     Get-MicromambaBinary
