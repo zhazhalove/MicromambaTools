@@ -293,46 +293,151 @@ function Invoke-PythonScript {
     Downloads and extracts the micromamba binary to the script's root directory.
 
 .DESCRIPTION
-    The `Get-MicromambaBinary` function downloads the latest micromamba binary for Windows (64-bit) from the official source 
-    and extracts it into the directory where the script is located (`$PSScriptRoot`).
+    The `Get-MicromambaBinary` function downloads the micromamba binary for Windows (64-bit) from the specified source URL 
+    and extracts it into the directory where the script is located (`$PSScriptRoot`). If no URL is provided, it defaults to 
+    downloading the latest version from the official source. After extraction, the function checks for the existence of 
+    `$PSScriptRoot\Library\bin\micromamba.exe` to ensure success.
+
+.PARAMETER Url
+    An optional URL to download the micromamba binary. Defaults to:
+    "https://micro.mamba.pm/api/micromamba/win-64/latest"
 
 .EXAMPLE
     Get-MicromambaBinary
-    Downloads and extracts the micromamba binary to `$PSScriptRoot`.
+    Downloads and extracts the micromamba binary from the default URL.
+
+.EXAMPLE
+    Get-MicromambaBinary -Url "https://example.com/custom/micromamba.tar.bz2"
+    Downloads and extracts the micromamba binary from a custom URL.
 
 .NOTES
     Ensure that the `tar` command is available in the environment.
 #>
 function Get-MicromambaBinary {
-    param ()
+    param (
+        [string]$Url = "https://micro.mamba.pm/api/micromamba/win-64/latest"
+    )
 
     $DESTINATIONPATH = $PSScriptRoot
 
-    # Define the download URL and output file paths
-    $url = "https://micro.mamba.pm/api/micromamba/win-64/latest"
+    # Define output file paths
     $downloadPath = Join-Path -Path $DESTINATIONPATH -ChildPath "micromamba.tar.bz2"
     $extractPath = $DESTINATIONPATH
+    $binaryPath = Join-Path -Path $DESTINATIONPATH -ChildPath "Library\bin\micromamba.exe"
 
     try {
         # Download the micromamba binary
-        Write-Host "Downloading micromamba binary from $url..." -ForegroundColor Yellow
-        Invoke-WebRequest -Uri $url -OutFile $downloadPath -UseDefaultCredentials
-        Write-Host "Download completed. File saved to $downloadPath." -ForegroundColor Green
+        Invoke-WebRequest -Uri $Url -OutFile $downloadPath -UseDefaultCredentials
 
         # Extract the tar.bz2 file
-        Write-Host "Extracting micromamba binary to $extractPath..." -ForegroundColor Yellow
         tar xf $downloadPath -C $extractPath
-        Write-Host "Extraction completed. Files available in $extractPath." -ForegroundColor Green
-    } catch {
-        Write-Host "An error occurred: $_" -ForegroundColor Red
-    } finally {
-        # Cleanup: Remove the tar.bz2 file
-        if (Test-Path -Path $downloadPath) {
-            Write-Host "Cleaning up downloaded file: $downloadPath" -ForegroundColor Yellow
-            Remove-Item -Path $downloadPath -Force
-            Write-Host "Cleaning up downloaded file: $PSScriptRoot\info" -ForegroundColor Yellow
-            Remove-Item -Path $PSScriptRoot\info -Force -Recurse
+
+        # Verify the micromamba binary exists
+        if (-not (Test-Path -Path $binaryPath)) {
+            return $false
         }
+
+        # Cleanup: Remove the tar.bz2 file and related files
+        if (Test-Path -Path $downloadPath) {
+            Remove-Item -Path $downloadPath -Force
+        }
+        if (Test-Path -Path "$PSScriptRoot\info") {
+            Remove-Item -Path "$PSScriptRoot\info" -Force -Recurse
+        }
+
+        # Return success
+        return $true
+    } catch {
+        # Return failure
+        return $false
+    }
+}
+
+
+
+<#
+.SYNOPSIS
+    Cleans up a micromamba environment and removes the micromamba executable and unused cached packages.
+
+.DESCRIPTION
+    The `Remove-MicromambaEnvironment` function removes a specified micromamba environment using the `micromamba` tool.
+    Additionally, it deletes the `micromamba.exe` and clears the cached packages using the `micromamba clean --all` command.
+
+.PARAMETER EnvName
+    The name of the micromamba environment to remove.
+
+.RETURNS
+    [bool] indicating if the cleanup was successful.
+
+.EXAMPLE
+    Cleanup-MicromambaEnvironment -EnvName "langchain"
+#>
+function Remove-MicromambaEnvironment {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$EnvName
+    )
+
+    try {
+        # Remove the specified micromamba environment
+        & "$PSScriptRoot\Library\bin\micromamba.exe" env remove -n $EnvName --yes *>&1 | Out-Null
+        
+        if ($LASTEXITCODE -ne 0) {
+            return $false
+        }
+
+        # Clean up cached packages
+        & "$PSScriptRoot\Library\bin\micromamba.exe" clean --all --yes *>&1 | Out-Null
+        
+        if ($LASTEXITCODE -ne 0) {
+            return $false
+        }
+
+        return $true
+
+    } catch {
+        return $false
+    }
+}
+
+
+<#
+.SYNOPSIS
+    Removes the micromamba executable, its root pefix directory, and unsets the MAMBA_ROOT_PREFIX environment variable.
+
+.DESCRIPTION
+    The `Remove-Micromamba` function deletes the `micromamba.exe` binary, the root prefix directory used by micromamba,
+    and clears the `MAMBA_ROOT_PREFIX` environment variable.
+
+.RETURNS
+    [bool] indicating if the removal was successful.
+
+.EXAMPLE
+    Remove-Micromamba
+#>
+function Remove-Micromamba {
+    try {
+        # Define path for micromamba executable
+        $micromambaPath = Join-Path -Path $PSScriptRoot -ChildPath "Library\"
+        # Define path for micromamba root directory
+        $micromambaRoot = $env:MAMBA_ROOT_PREFIX
+
+        # Remove micromamba executable
+        if (Test-Path -Path $micromambaPath) {
+            Remove-Item -Path $micromambaPath -Force -Recurse
+        }
+
+        # Remove micromamba root directory
+        if (Test-Path -Path $micromambaRoot) {
+            Remove-Item -Path $micromambaRoot -Force -Recurse
+        }
+
+        # Unset the MAMBA_ROOT_PREFIX environment variable
+        Remove-Item -Path Env:\MAMBA_ROOT_PREFIX -ErrorAction SilentlyContinue
+
+        return $true
+    } catch {
+        return $false
     }
 }
 
