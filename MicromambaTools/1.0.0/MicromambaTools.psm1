@@ -288,55 +288,132 @@ function Invoke-PythonScript {
     }
 }
 
+# <#
+# .SYNOPSIS
+#     Downloads and extracts the micromamba binary to the script's root directory.
+
+# .DESCRIPTION
+#     The `Get-MicromambaBinary` function downloads the micromamba binary for Windows (64-bit) from the specified source URL 
+#     and extracts it into the directory where the script is located (`$PSScriptRoot`). If no URL is provided, it defaults to 
+#     downloading the latest version from the official source. After extraction, the function checks for the existence of 
+#     `$PSScriptRoot\micromamba.exe` to ensure success.
+
+# .PARAMETER Url
+#     An optional URL to download the micromamba binary. Defaults to:
+#     "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64"
+
+# .EXAMPLE
+#     Get-MicromambaBinary
+#     Downloads and extracts the micromamba binary from the default URL.
+
+# .EXAMPLE
+#     Get-MicromambaBinary -Url "https://example.com/custom/micromamba.tar.bz2"
+#     Downloads and extracts the micromamba binary from a custom URL.
+
+# .NOTES
+#     Ensure that the `tar` command is available in the environment.
+# #>
+# function Get-MicromambaBinary {
+#     param (
+#         [string]$Url = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64"
+#     )
+
+#     $DESTINATIONPATH = $PSScriptRoot
+
+#     # Define output file paths
+#     $downloadPath = Join-Path -Path $DESTINATIONPATH -ChildPath "micromamba.exe"
+
+#     try {
+#         # Download the micromamba binary
+#         Invoke-WebRequest -Uri $Url -OutFile $downloadPath -UseDefaultCredentials
+
+#         # Verify the micromamba binary exists
+#         if (-not (Test-Path -Path $downloadPath)) {
+#             return $false
+#         }
+
+#         # Return success
+#         return $true
+#     } catch {
+#         # Return failure
+#         return $false
+#     }
+# }
+
+
 <#
 .SYNOPSIS
-    Downloads and extracts the micromamba binary to the script's root directory.
+    Downloads and extracts the micromamba binary to the script's root directory and verifies its checksum.
 
 .DESCRIPTION
-    The `Get-MicromambaBinary` function downloads the micromamba binary for Windows (64-bit) from the specified source URL 
-    and extracts it into the directory where the script is located (`$PSScriptRoot`). If no URL is provided, it defaults to 
-    downloading the latest version from the official source. After extraction, the function checks for the existence of 
-    `$PSScriptRoot\micromamba.exe` to ensure success.
+    The `Get-MicromambaBinary` function downloads the micromamba binary and its SHA256 checksum file for Windows (64-bit) from the specified source URLs and extracts it into the directory where the script is located (`$PSScriptRoot`).
+    It verifies the integrity of the downloaded binary by comparing its checksum with the provided SHA256 file.
+    If the checksum verification fails, all downloaded and extracted files are removed.
 
 .PARAMETER Url
     An optional URL to download the micromamba binary. Defaults to:
     "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64"
 
+.PARAMETER ChecksumUrl
+    An optional URL to download the SHA256 checksum file. Defaults to:
+    "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64.sha256"
+
 .EXAMPLE
     Get-MicromambaBinary
-    Downloads and extracts the micromamba binary from the default URL.
+    Downloads, verifies, and extracts the micromamba binary from the default URLs.
 
 .EXAMPLE
-    Get-MicromambaBinary -Url "https://example.com/custom/micromamba.tar.bz2"
-    Downloads and extracts the micromamba binary from a custom URL.
+    Get-MicromambaBinary -Url "https://example.com/custom/micromamba.exe" -ChecksumUrl "https://example.com/custom/micromamba.sha256"
+    Downloads, verifies, and extracts the micromamba binary from custom URLs.
 
 .NOTES
-    Ensure that the `tar` command is available in the environment.
+    Ensure that the `tar` command is available in the environment if you use extracted tarballs in future versions.
 #>
 function Get-MicromambaBinary {
     param (
-        [string]$Url = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64"
+        [string]$Url = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64",
+        [string]$ChecksumUrl = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64.sha256"
     )
 
-    $DESTINATIONPATH = $PSScriptRoot
-
-    # Define output file paths
-    $downloadPath = Join-Path -Path $DESTINATIONPATH -ChildPath "micromamba.exe"
+    $destinationPath = $PSScriptRoot
+    $binaryPath = Join-Path -Path $destinationPath -ChildPath "micromamba.exe"
+    $checksumPath = Join-Path -Path $destinationPath -ChildPath "micromamba-win-64.sha256"
 
     try {
         # Download the micromamba binary
-        Invoke-WebRequest -Uri $Url -OutFile $downloadPath -UseDefaultCredentials
+        Invoke-WebRequest -Uri $Url -OutFile $binaryPath -UseDefaultCredentials
 
-        # Verify the micromamba binary exists
-        if (-not (Test-Path -Path $downloadPath)) {
+        # Download the SHA256 checksum file
+        Invoke-WebRequest -Uri $ChecksumUrl -OutFile $checksumPath -UseDefaultCredentials
+
+        # Verify both files exist
+        if (-not (Test-Path -Path $binaryPath) -or -not (Test-Path -Path $checksumPath)) {
+            Remove-Item -Path $binaryPath, $checksumPath -ErrorAction SilentlyContinue
             return $false
         }
 
-        # Return success
+        # Read the checksum from the SHA256 file
+        $expectedChecksum = (Get-Content -Path $checksumPath -ErrorAction Stop).Trim()
+
+        # Compute the actual checksum of the downloaded binary
+        $actualChecksum = (Get-FileHash -Path $binaryPath -Algorithm SHA256).Hash
+
+        # Compare checksums
+        if ($expectedChecksum -ne $actualChecksum) {
+            # Remove files if checksum verification fails
+            Remove-Item -Path $binaryPath, $checksumPath -ErrorAction SilentlyContinue
+            return $false
+        }
+
+        # Return success if everything checks out
         return $true
     } catch {
-        # Return failure
+        # Clean up files on error
+        Remove-Item -Path $binaryPath, $checksumPath -ErrorAction SilentlyContinue
         return $false
+    }
+    finally {
+        Remove-Item -Path $checksumPath -ErrorAction SilentlyContinue
     }
 }
 
