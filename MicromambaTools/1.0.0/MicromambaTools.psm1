@@ -336,5 +336,58 @@ function Get-MicromambaBinary {
     }
 }
 
+<#
+.SYNOPSIS
+    Cleans up a micromamba environment and removes the micromamba executable and unused cached packages.
 
-Export-ModuleMember -Function Get-MicromambaBinary, Invoke-PythonScript, New-MicromambaEnvironment, Install-PackagesInMicromambaEnvironment, Test-MicromambaEnvironment, Initialize-MambaRootPrefix
+.DESCRIPTION
+    The `Remove-MicromambaEnvironment` function removes a specified micromamba environment using the `micromamba` tool.
+    Additionally, it deletes the `micromamba.exe` and clears the cached packages using the `micromamba clean --all` command.
+
+.PARAMETER EnvName
+    The name of the micromamba environment to remove.
+
+.RETURNS
+    [bool] indicating if the cleanup was successful.
+
+.EXAMPLE
+    Cleanup-MicromambaEnvironment -EnvName "langchain"
+#>
+function Remove-MicromambaEnvironment {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$EnvName
+    )
+
+    try {
+        # Remove the specified micromamba environment
+        & "$PSScriptRoot\Library\bin\micromamba.exe" env remove -n $EnvName --yes *>&1 | Out-Null
+        
+        if ($LASTEXITCODE -ne 0) {
+            return $false
+        }
+
+        # Clean up cached packages
+        & "$PSScriptRoot\Library\bin\micromamba.exe" clean --all --yes *>&1 | Out-Null
+        
+        if ($LASTEXITCODE -ne 0) {
+            return $false
+        }
+
+        # Define path for micromamba executable
+        $micromambaPath = Join-Path -Path $PSScriptRoot -ChildPath "Library\bin\micromamba.exe"
+
+        # Remove micromamba executable
+        if (Test-Path -Path $micromambaPath) {
+            Remove-Item -Path $micromambaPath -Force
+        }
+
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+
+
+Export-ModuleMember -Function Remove-MicromambaEnvironment Get-MicromambaBinary, Invoke-PythonScript, New-MicromambaEnvironment, Install-PackagesInMicromambaEnvironment, Test-MicromambaEnvironment, Initialize-MambaRootPrefix
