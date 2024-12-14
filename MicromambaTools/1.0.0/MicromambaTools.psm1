@@ -341,35 +341,41 @@ function Invoke-PythonScript {
     Downloads and extracts the micromamba binary to the script's root directory.
 
 .DESCRIPTION
-    The `Get-MicromambaBinary` function downloads the latest micromamba binary for Windows (64-bit) from the official source 
-    and extracts it into the directory where the script is located (`$PSScriptRoot`). It ensures the binary exists at 
-    `$PSScriptRoot\Library\bin\micromamba.exe` after extraction. The function returns `$true` if all operations succeed and 
-    `$false` otherwise.
+    The `Get-MicromambaBinary` function downloads the micromamba binary for Windows (64-bit) from the specified source URL 
+    and extracts it into the directory where the script is located (`$PSScriptRoot`). If no URL is provided, it defaults to 
+    downloading the latest version from the official source. After extraction, the function checks for the existence of 
+    `$PSScriptRoot\Library\bin\micromamba.exe` to ensure success.
+
+.PARAMETER Url
+    An optional URL to download the micromamba binary. Defaults to:
+    "https://micro.mamba.pm/api/micromamba/win-64/latest"
 
 .EXAMPLE
-    if (Get-MicromambaBinary) {
-        Write-Output "Micromamba downloaded and extracted successfully."
-    } else {
-        Write-Output "Micromamba download or extraction failed."
-    }
+    Get-MicromambaBinary
+    Downloads and extracts the micromamba binary from the default URL.
+
+.EXAMPLE
+    Get-MicromambaBinary -Url "https://example.com/custom/micromamba.tar.bz2"
+    Downloads and extracts the micromamba binary from a custom URL.
 
 .NOTES
     Ensure that the `tar` command is available in the environment.
 #>
 function Get-MicromambaBinary {
-    param ()
+    param (
+        [string]$Url = "https://micro.mamba.pm/api/micromamba/win-64/latest"
+    )
 
     $DESTINATIONPATH = $PSScriptRoot
 
-    # Define the download URL and output file paths
-    $url = "https://micro.mamba.pm/api/micromamba/win-64/latest"
+    # Define output file paths
     $downloadPath = Join-Path -Path $DESTINATIONPATH -ChildPath "micromamba.tar.bz2"
     $extractPath = $DESTINATIONPATH
     $binaryPath = Join-Path -Path $DESTINATIONPATH -ChildPath "Library\bin\micromamba.exe"
 
     try {
         # Download the micromamba binary
-        Invoke-WebRequest -Uri $url -OutFile $downloadPath -UseDefaultCredentials
+        Invoke-WebRequest -Uri $Url -OutFile $downloadPath -UseDefaultCredentials
 
         # Extract the tar.bz2 file
         tar xf $downloadPath -C $extractPath
@@ -394,6 +400,7 @@ function Get-MicromambaBinary {
         return $false
     }
 }
+
 
 
 <#
