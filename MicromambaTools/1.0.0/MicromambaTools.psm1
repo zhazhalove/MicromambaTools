@@ -374,13 +374,13 @@ function Remove-MicromambaEnvironment {
             return $false
         }
 
-        # Define path for micromamba executable
-        $micromambaPath = Join-Path -Path $PSScriptRoot -ChildPath "Library\bin\micromamba.exe"
+        # # Define path for micromamba executable
+        # $micromambaPath = Join-Path -Path $PSScriptRoot -ChildPath "Library\bin\micromamba.exe"
 
-        # Remove micromamba executable
-        if (Test-Path -Path $micromambaPath) {
-            Remove-Item -Path $micromambaPath -Force
-        }
+        # # Remove micromamba executable
+        # if (Test-Path -Path $micromambaPath) {
+        #     Remove-Item -Path $micromambaPath -Force
+        # }
 
         return $true
     } catch {
