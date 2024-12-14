@@ -288,54 +288,6 @@ function Invoke-PythonScript {
     }
 }
 
-# <#
-# .SYNOPSIS
-#     Downloads and extracts the micromamba binary to the script's root directory.
-
-# .DESCRIPTION
-#     The `Get-MicromambaBinary` function downloads the latest micromamba binary for Windows (64-bit) from the official source 
-#     and extracts it into the directory where the script is located (`$PSScriptRoot`).
-
-# .EXAMPLE
-#     Get-MicromambaBinary
-#     Downloads and extracts the micromamba binary to `$PSScriptRoot`.
-
-# .NOTES
-#     Ensure that the `tar` command is available in the environment.
-# #>
-# function Get-MicromambaBinary {
-#     param ()
-
-#     $DESTINATIONPATH = $PSScriptRoot
-
-#     # Define the download URL and output file paths
-#     $url = "https://micro.mamba.pm/api/micromamba/win-64/latest"
-#     $downloadPath = Join-Path -Path $DESTINATIONPATH -ChildPath "micromamba.tar.bz2"
-#     $extractPath = $DESTINATIONPATH
-
-#     try {
-#         # Download the micromamba binary
-#         Write-Host "Downloading micromamba binary from $url..." -ForegroundColor Yellow
-#         Invoke-WebRequest -Uri $url -OutFile $downloadPath -UseDefaultCredentials
-#         Write-Host "Download completed. File saved to $downloadPath." -ForegroundColor Green
-
-#         # Extract the tar.bz2 file
-#         Write-Host "Extracting micromamba binary to $extractPath..." -ForegroundColor Yellow
-#         tar xf $downloadPath -C $extractPath
-#         Write-Host "Extraction completed. Files available in $extractPath." -ForegroundColor Green
-#     } catch {
-#         Write-Host "An error occurred: $_" -ForegroundColor Red
-#     } finally {
-#         # Cleanup: Remove the tar.bz2 file
-#         if (Test-Path -Path $downloadPath) {
-#             Write-Host "Cleaning up downloaded file: $downloadPath" -ForegroundColor Yellow
-#             Remove-Item -Path $downloadPath -Force
-#             Write-Host "Cleaning up downloaded file: $PSScriptRoot\info" -ForegroundColor Yellow
-#             Remove-Item -Path $PSScriptRoot\info -Force -Recurse
-#         }
-#     }
-# }
-
 <#
 .SYNOPSIS
     Downloads and extracts the micromamba binary to the script's root directory.
