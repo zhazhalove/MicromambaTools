@@ -49,7 +49,7 @@ function Test-MicromambaEnvironment {
         [string]$EnvName
     )
     $pattern = "^\s*$EnvName\s*"
-    $envList = & "$PSScriptRoot\Library\bin\micromamba.exe" env list | Select-String -Pattern $pattern
+    $envList = & "$PSScriptRoot\micromamba.exe" env list | Select-String -Pattern $pattern
     return ($null -ne $envList -and $envList.Matches.Success -and $envList.Matches.Groups[0].Value.Trim() -eq $EnvName)
 }
 
@@ -97,11 +97,11 @@ function Install-PackagesInMicromambaEnvironment {
         try {
             if ($TrustedHost) {
                 # Run the install command with trusted hosts
-                & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName pip install $package --trusted-host pypi.org --trusted-host files.pythonhosted.org *>&1 | Out-Null
+                & "$PSScriptRoot\micromamba.exe" run -n $EnvName pip install $package --trusted-host pypi.org --trusted-host files.pythonhosted.org *>&1 | Out-Null
             }
             else {
                 # Run the install command without trusted hosts
-                & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName pip install $package *>&1 | Out-Null
+                & "$PSScriptRoot\micromamba.exe" run -n $EnvName pip install $package *>&1 | Out-Null
             }
 
             # Check if the installation was successful
@@ -176,11 +176,11 @@ function New-MicromambaEnvironment {
 
     if ($TrustedHost) {
         # redirect output since uipath captures the output
-        & "$PSScriptRoot\Library\bin\micromamba.exe" create -n $EnvName --yes --ssl-verify False python=$PythonVersion pip -c conda-forge *>&1 | Out-Null
+        & "$PSScriptRoot\micromamba.exe" create -n $EnvName --yes --ssl-verify False python=$PythonVersion pip -c conda-forge *>&1 | Out-Null
     }
     else {
         # redirect output since uipath captures the output
-        & "$PSScriptRoot\Library\bin\micromamba.exe" create -n $EnvName --yes python=$PythonVersion pip -c conda-forge *>&1 | Out-Null
+        & "$PSScriptRoot\micromamba.exe" create -n $EnvName --yes python=$PythonVersion pip -c conda-forge *>&1 | Out-Null
     }
  
     if ($LASTEXITCODE -eq 0) {
@@ -279,7 +279,7 @@ function Invoke-PythonScript {
         $ArgumentString = $Arguments -join ' '
 
         # Execute the Python script with the constructed argument string
-        $finalResult = & "$PSScriptRoot\Library\bin\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString *>&1 | ConvertFrom-Json
+        $finalResult = & "$PSScriptRoot\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString *>&1 | ConvertFrom-Json
 
         return $finalResult
     } catch {
@@ -288,71 +288,82 @@ function Invoke-PythonScript {
     }
 }
 
+
 <#
 .SYNOPSIS
-    Downloads and extracts the micromamba binary to the script's root directory.
+    Downloads and extracts the micromamba binary to the script's root directory and verifies its checksum.
 
 .DESCRIPTION
-    The `Get-MicromambaBinary` function downloads the micromamba binary for Windows (64-bit) from the specified source URL 
-    and extracts it into the directory where the script is located (`$PSScriptRoot`). If no URL is provided, it defaults to 
-    downloading the latest version from the official source. After extraction, the function checks for the existence of 
-    `$PSScriptRoot\Library\bin\micromamba.exe` to ensure success.
+    The `Get-MicromambaBinary` function downloads the micromamba binary and its SHA256 checksum file for Windows (64-bit) from the specified source URLs and extracts it into the directory where the script is located (`$PSScriptRoot`).
+    It verifies the integrity of the downloaded binary by comparing its checksum with the provided SHA256 file.
+    If the checksum verification fails, all downloaded and extracted files are removed.
 
 .PARAMETER Url
     An optional URL to download the micromamba binary. Defaults to:
-    "https://micro.mamba.pm/api/micromamba/win-64/latest"
+    "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64"
+
+.PARAMETER ChecksumUrl
+    An optional URL to download the SHA256 checksum file. Defaults to:
+    "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64.sha256"
 
 .EXAMPLE
     Get-MicromambaBinary
-    Downloads and extracts the micromamba binary from the default URL.
+    Downloads, verifies, and extracts the micromamba binary from the default URLs.
 
 .EXAMPLE
-    Get-MicromambaBinary -Url "https://example.com/custom/micromamba.tar.bz2"
-    Downloads and extracts the micromamba binary from a custom URL.
+    Get-MicromambaBinary -Url "https://example.com/custom/micromamba.exe" -ChecksumUrl "https://example.com/custom/micromamba.sha256"
+    Downloads, verifies, and extracts the micromamba binary from custom URLs.
 
 .NOTES
-    Ensure that the `tar` command is available in the environment.
+    Ensure that the `tar` command is available in the environment if you use extracted tarballs in future versions.
 #>
 function Get-MicromambaBinary {
     param (
-        [string]$Url = "https://micro.mamba.pm/api/micromamba/win-64/latest"
+        [string]$Url = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64",
+        [string]$ChecksumUrl = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64.sha256"
     )
 
-    $DESTINATIONPATH = $PSScriptRoot
-
-    # Define output file paths
-    $downloadPath = Join-Path -Path $DESTINATIONPATH -ChildPath "micromamba.tar.bz2"
-    $extractPath = $DESTINATIONPATH
-    $binaryPath = Join-Path -Path $DESTINATIONPATH -ChildPath "Library\bin\micromamba.exe"
+    $destinationPath = $PSScriptRoot
+    $binaryPath = Join-Path -Path $destinationPath -ChildPath "micromamba.exe"
+    $checksumPath = Join-Path -Path $destinationPath -ChildPath "micromamba-win-64.sha256"
 
     try {
         # Download the micromamba binary
-        Invoke-WebRequest -Uri $Url -OutFile $downloadPath -UseDefaultCredentials
+        Invoke-WebRequest -Uri $Url -OutFile $binaryPath -UseDefaultCredentials
 
-        # Extract the tar.bz2 file
-        tar xf $downloadPath -C $extractPath
+        # Download the SHA256 checksum file
+        Invoke-WebRequest -Uri $ChecksumUrl -OutFile $checksumPath -UseDefaultCredentials
 
-        # Verify the micromamba binary exists
-        if (-not (Test-Path -Path $binaryPath)) {
+        # Verify both files exist
+        if (-not (Test-Path -Path $binaryPath) -or -not (Test-Path -Path $checksumPath)) {
+            Remove-Item -Path $binaryPath, $checksumPath -ErrorAction SilentlyContinue
             return $false
         }
 
-        # Cleanup: Remove the tar.bz2 file and related files
-        if (Test-Path -Path $downloadPath) {
-            Remove-Item -Path $downloadPath -Force
-        }
-        if (Test-Path -Path "$PSScriptRoot\info") {
-            Remove-Item -Path "$PSScriptRoot\info" -Force -Recurse
+        # Read the checksum from the SHA256 file
+        $expectedChecksum = (Get-Content -Path $checksumPath -ErrorAction Stop).Trim()
+
+        # Compute the actual checksum of the downloaded binary
+        $actualChecksum = (Get-FileHash -Path $binaryPath -Algorithm SHA256).Hash
+
+        # Compare checksums
+        if ($expectedChecksum -ne $actualChecksum) {
+            # Remove files if checksum verification fails
+            Remove-Item -Path $binaryPath, $checksumPath -ErrorAction SilentlyContinue
+            return $false
         }
 
-        # Return success
+        # Return success if everything checks out
         return $true
     } catch {
-        # Return failure
+        # Clean up files on error
+        Remove-Item -Path $binaryPath, $checksumPath -ErrorAction SilentlyContinue
         return $false
     }
+    finally {
+        Remove-Item -Path $checksumPath -ErrorAction SilentlyContinue
+    }
 }
-
 
 
 <#
@@ -380,14 +391,14 @@ function Remove-MicromambaEnvironment {
 
     try {
         # Remove the specified micromamba environment
-        & "$PSScriptRoot\Library\bin\micromamba.exe" env remove -n $EnvName --yes *>&1 | Out-Null
+        & "$PSScriptRoot\micromamba.exe" env remove -n $EnvName --yes *>&1 | Out-Null
         
         if ($LASTEXITCODE -ne 0) {
             return $false
         }
 
         # Clean up cached packages
-        & "$PSScriptRoot\Library\bin\micromamba.exe" clean --all --yes *>&1 | Out-Null
+        & "$PSScriptRoot\micromamba.exe" clean --all --yes *>&1 | Out-Null
         
         if ($LASTEXITCODE -ne 0) {
             return $false
@@ -418,7 +429,7 @@ function Remove-MicromambaEnvironment {
 function Remove-Micromamba {
     try {
         # Define path for micromamba executable
-        $micromambaPath = Join-Path -Path $PSScriptRoot -ChildPath "Library\"
+        $micromambaPath = Join-Path -Path $PSScriptRoot -ChildPath "micromamba.exe"
         # Define path for micromamba root directory
         $micromambaRoot = $env:MAMBA_ROOT_PREFIX
 
