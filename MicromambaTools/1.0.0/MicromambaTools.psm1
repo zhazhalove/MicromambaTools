@@ -399,13 +399,13 @@ function Remove-MicromambaEnvironment {
 function Remove-Micromamba {
     try {
         # Define path for micromamba executable
-        $micromambaPath = Join-Path -Path $PSScriptRoot -ChildPath "Library\bin\micromamba.exe"
+        $micromambaPath = Join-Path -Path $PSScriptRoot -ChildPath "Library\"
         # Define path for micromamba root directory
         $micromambaRoot = $env:MAMBA_ROOT_PREFIX
 
         # Remove micromamba executable
         if (Test-Path -Path $micromambaPath) {
-            Remove-Item -Path $micromambaPath -Force
+            Remove-Item -Path $micromambaPath -Force -Recurse
         }
 
         # Remove micromamba root directory
