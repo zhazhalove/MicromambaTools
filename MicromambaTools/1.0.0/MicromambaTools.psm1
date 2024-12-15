@@ -30,6 +30,16 @@ function Initialize-MambaRootPrefix {
     )
     # Set MAMBA_ROOT_PREFIX environment variable
     $env:MAMBA_ROOT_PREFIX = $MAMBA_ROOT_PREFIX
+
+    $configPath = "$env:USERPROFILE\.mambarc"
+    $configContent = @"
+pkgs_dirs:
+   - $env:MAMBA_ROOT_PREFIX\pkgs
+use_lockfiles: false
+"@
+
+    Set-Content -Path $configPath -Value $configContent -Encoding UTF8
+    # Write-Host "Configuration file created at $configPath"
 }
 
 
@@ -52,7 +62,7 @@ function Test-MicromambaEnvironment {
         [string]$EnvName
     )
     $pattern = "^\s*$EnvName\s*"
-    $envList = & "$PSScriptRoot\micromamba.exe" env list | Select-String -Pattern $pattern
+    $envList = & "$env:MAMBA_ROOT_PREFIX\micromamba.exe" env list | Select-String -Pattern $pattern
     return ($null -ne $envList -and $envList.Matches.Success -and $envList.Matches.Groups[0].Value.Trim() -eq $EnvName)
 }
 
@@ -106,11 +116,11 @@ function Install-PackagesInMicromambaEnvironment {
         try {
             if ($TrustedHost) {
                 # Run the install command with trusted hosts
-                & "$PSScriptRoot\micromamba.exe" run -n $EnvName pip install $package --trusted-host pypi.org --trusted-host files.pythonhosted.org *>&1 | Out-Null
+                & "$env:MAMBA_ROOT_PREFIX\micromamba.exe" run -n $EnvName pip install $package --trusted-host pypi.org --trusted-host files.pythonhosted.org *>&1 | Out-Null
             }
             else {
                 # Run the install command without trusted hosts
-                & "$PSScriptRoot\micromamba.exe" run -n $EnvName pip install $package *>&1 | Out-Null
+                & "$env:MAMBA_ROOT_PREFIX\micromamba.exe" run -n $EnvName pip install $package *>&1 | Out-Null
             }
 
             # Check if the installation was successful
@@ -188,11 +198,11 @@ function New-MicromambaEnvironment {
 
     if ($TrustedHost) {
         # redirect output since uipath captures the output
-        & "$PSScriptRoot\micromamba.exe" create -n $EnvName --yes --ssl-verify False python=$PythonVersion pip -c conda-forge *>&1 | Out-Null
+        & "$env:MAMBA_ROOT_PREFIX\micromamba.exe" create -n $EnvName --yes --ssl-verify False python=$PythonVersion pip -c conda-forge *>&1 | Out-Null
     }
     else {
         # redirect output since uipath captures the output
-        & "$PSScriptRoot\micromamba.exe" create -n $EnvName --yes python=$PythonVersion pip -c conda-forge *>&1 | Out-Null
+        & "$env:MAMBA_ROOT_PREFIX\micromamba.exe" create -n $EnvName --yes python=$PythonVersion pip -c conda-forge *>&1 | Out-Null
     }
  
     if ($LASTEXITCODE -eq 0) {
@@ -291,7 +301,7 @@ function Invoke-PythonScript {
         $ArgumentString = $Arguments -join ' '
 
         # Execute the Python script with the constructed argument string
-        [string]$finalResult = & "$PSScriptRoot\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString
+        [string]$finalResult = & "$env:MAMBA_ROOT_PREFIX\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString
 
         return [string]$finalResult
 
@@ -336,11 +346,16 @@ function Get-MicromambaBinary {
         [string]$ChecksumUrl = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64.sha256"
     )
 
-    $destinationPath = $PSScriptRoot
+    $destinationPath = $env:MAMBA_ROOT_PREFIX
     $binaryPath = Join-Path -Path $destinationPath -ChildPath "micromamba.exe"
     $checksumPath = Join-Path -Path $destinationPath -ChildPath "micromamba-win-64.sha256"
 
     try {
+
+        if (-not (Test-Path $destinationPath) ) {
+            New-Item -Type Directory -Path $destinationPath -Force
+        }
+
         # Download the micromamba binary
         Invoke-WebRequest -Uri $Url -OutFile $binaryPath -UseDefaultCredentials
 
@@ -348,9 +363,14 @@ function Get-MicromambaBinary {
         Invoke-WebRequest -Uri $ChecksumUrl -OutFile $checksumPath -UseDefaultCredentials
 
         # Verify both files exist
-        if (-not (Test-Path -Path $binaryPath) -or -not (Test-Path -Path $checksumPath)) {
-            Remove-Item -Path $binaryPath, $checksumPath -ErrorAction SilentlyContinue
-            return $false
+        if (-not (Test-Path -Path $binaryPath) ) {
+            
+            throw [Exception]::new("Binary path NOT found - $binaryPath")
+        }
+
+        if(-not (Test-Path -Path $checksumPath) ) {
+
+            throw [Exception]::new("Checksum path NOT found - $checksumPath")
         }
 
         # Read the checksum from the SHA256 file
@@ -361,16 +381,17 @@ function Get-MicromambaBinary {
 
         # Compare checksums
         if ($expectedChecksum -ne $actualChecksum) {
-            # Remove files if checksum verification fails
-            Remove-Item -Path $binaryPath, $checksumPath -ErrorAction SilentlyContinue
-            return $false
+
+            throw [Exception]::new("Checksum does NOT match - expected: $expectedChecksum  actual: $actualChecksum")
         }
 
         # Return success if everything checks out
         return $true
-    } catch {
+    } catch [Exception] {
+        # Write-Host $_.Message
+
         # Clean up files on error
-        Remove-Item -Path $binaryPath, $checksumPath -ErrorAction SilentlyContinue
+        Remove-Item -Path $binaryPath -ErrorAction SilentlyContinue
         return $false
     }
     finally {
@@ -404,14 +425,14 @@ function Remove-MicromambaEnvironment {
 
     try {
         # Remove the specified micromamba environment
-        & "$PSScriptRoot\micromamba.exe" env remove -n $EnvName --yes *>&1 | Out-Null
+        & "$env:MAMBA_ROOT_PREFIX\micromamba.exe" env remove -n $EnvName --yes *>&1 | Out-Null
         
         if ($LASTEXITCODE -ne 0) {
             return $false
         }
 
         # Clean up cached packages
-        & "$PSScriptRoot\micromamba.exe" clean --all --yes *>&1 | Out-Null
+        & "$env:MAMBA_ROOT_PREFIX\micromamba.exe" clean --all --yes *>&1 | Out-Null
         
         if ($LASTEXITCODE -ne 0) {
             return $false
@@ -442,9 +463,20 @@ function Remove-MicromambaEnvironment {
 function Remove-Micromamba {
     try {
         # Define path for micromamba executable
-        $micromambaPath = Join-Path -Path $PSScriptRoot -ChildPath "micromamba.exe"
+        $micromambaPath = Join-Path -Path $env:MAMBA_ROOT_PREFIX -ChildPath "micromamba.exe"
+
         # Define path for micromamba root directory
         $micromambaRoot = $env:MAMBA_ROOT_PREFIX
+
+        # Define path for micromamba config file
+        $micromambaConfig = Join-Path -Path $env:USERPROFILE -ChildPath ".mambarc"
+
+        # Define path for conda
+        $conda = Join-Path -Path $env:USERPROFILE -ChildPath ".conda"
+
+        # Define path for .mamba
+        $mamba = Join-Path -Path $env:USERPROFILE -ChildPath ".mamba"
+
 
         # Remove micromamba executable
         if (Test-Path -Path $micromambaPath) {
@@ -454,6 +486,21 @@ function Remove-Micromamba {
         # Remove micromamba root directory
         if (Test-Path -Path $micromambaRoot) {
             Remove-Item -Path $micromambaRoot -Force -Recurse
+        }
+
+        # Remove micromamba config file
+        if (Test-Path -Path $micromambaConfig) {
+            Remove-Item -Path $micromambaConfig -Force
+        }
+
+        # Remove conda files
+        if (Test-Path -Path $conda) {
+            Remove-Item -Path $conda -Force -Recurse
+        }
+
+        # Remove mamba files
+        if (Test-Path -Path $mamba) {
+            Remove-Item -Path $mamba -Force -Recurse
         }
 
         # Unset the MAMBA_ROOT_PREFIX environment variable
