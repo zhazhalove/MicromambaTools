@@ -291,9 +291,9 @@ function Invoke-PythonScript {
         $ArgumentString = $Arguments -join ' '
 
         # Execute the Python script with the constructed argument string
-        $finalResult = & "$PSScriptRoot\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString *>&1 | ConvertFrom-Json
+        [string]$finalResult = & "$PSScriptRoot\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString
 
-        return [string]$finalResult | ConvertTo-Json
+        return [string]$finalResult
 
     } catch [System.Exception] {
         # Write-Host "Error running Python script: $_" -ForegroundColor Red
