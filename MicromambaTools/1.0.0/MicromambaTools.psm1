@@ -87,7 +87,7 @@ function Install-PackagesInMicromambaEnvironment {
     )
 
     # Initialize an array to store results
-    [PSCustomObject[]]$results = @()
+    [hashtable[]]$results = @()
 
     # Write-Host "Installing packages in micromamba environment: $EnvName" -ForegroundColor Yellow
 
@@ -107,26 +107,26 @@ function Install-PackagesInMicromambaEnvironment {
             # Check if the installation was successful
             if ($LASTEXITCODE -eq 0) {
                 # Add success result for this package
-                $results += [PSCustomObject]@{
+                $results += @{
                     PackageName = $package
-                    Success     = $true
+                    Success = $true
                 }
                 # Write-Host "Successfully installed package: $package" -ForegroundColor Cyan
             }
             else {
                 # Add failure result for this package
-                $results += [PSCustomObject]@{
+                $results += @{
                     PackageName = $package
-                    Success     = $false
+                    Success = $false
                 }
                 # Write-Host "Failed to install package: $package" -ForegroundColor Red
             }
         }
         catch {
             # In case of an exception, log the failure for this package
-            $results += [PSCustomObject]@{
+            $results += @{
                 PackageName = $package
-                Success     = $false
+                Success = $false
             }
             # Write-Host "Error installing package: $package" -ForegroundColor Red
         }
