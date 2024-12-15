@@ -1,24 +1,27 @@
 
 <#
 .SYNOPSIS
-Sets the MAMBA_ROOT_PREFIX environment variable for micromamba.
+    Sets the MAMBA_ROOT_PREFIX environment variable for micromamba.
 
 .DESCRIPTION
-The `Initialize-MambaRootPrefix` function sets the environment variable `MAMBA_ROOT_PREFIX` to the specified path for micromamba. If no path is specified, it defaults to the `$env:APPDATA\micromamba` directory. This environment variable is typically used by micromamba to define the root directory for its environments.
+    The `Initialize-MambaRootPrefix` function sets the environment variable `MAMBA_ROOT_PREFIX` to the specified path for micromamba. If no path is specified, it defaults to the `$env:APPDATA\micromamba` directory. This environment variable is typically used by micromamba to define the root directory for its environments.
 
 .PARAMETER MAMBA_ROOT_PREFIX
-The path to set for the `MAMBA_ROOT_PREFIX` environment variable. If not provided, the function defaults to `$env:APPDATA\micromamba`.
+    The path to set for the `MAMBA_ROOT_PREFIX` environment variable. If not provided, the function defaults to `$env:APPDATA\micromamba`.
+
+.OUTPUTS
+    $null
 
 .EXAMPLE
-Initialize-MambaRootPrefix -MAMBA_ROOT_PREFIX "C:\mamba"
-This will set the `MAMBA_ROOT_PREFIX` environment variable to "C:\mamba".
+    Initialize-MambaRootPrefix -MAMBA_ROOT_PREFIX "C:\mamba"
+    This will set the `MAMBA_ROOT_PREFIX` environment variable to "C:\mamba".
 
 .EXAMPLE
-Initialize-MambaRootPrefix
-This will set the `MAMBA_ROOT_PREFIX` environment variable to the default value of `$env:APPDATA\micromamba`.
+    Initialize-MambaRootPrefix
+    This will set the `MAMBA_ROOT_PREFIX` environment variable to the default value of `$env:APPDATA\micromamba`.
 
 .NOTES
-https://mamba.readthedocs.io/en/latest/user_guide/concepts.html#root-prefix
+    https://mamba.readthedocs.io/en/latest/user_guide/concepts.html#root-prefix
 #>
 function Initialize-MambaRootPrefix {
     param (
@@ -37,7 +40,7 @@ function Initialize-MambaRootPrefix {
 .PARAMETER EnvName
     The name of the micromamba environment to check.
 
-.RETURNS
+.OUTPUTS
     [bool] indicating if the environment exists.
 
 .EXAMPLE
@@ -68,11 +71,17 @@ function Test-MicromambaEnvironment {
     If provided, adds the --trusted-host flag to the pip install command for trusted hosts (pypi.org and files.pythonhosted.org).
     https://pip.pypa.io/en/stable/topics/https-certificates/#
 
+.OUTPUTS
+    [HASHTABLE[]]
+    keys:
+    - PackageName
+    - Success
+
 .EXAMPLE
     Install-PackagesInMicromambaEnvironment -EnvName "langchain" -Packages @("numpy", "pandas", "matplotlib")
 
 .EXAMPLE
-Install-PackagesInMicromambaEnvironment -EnvName "langchain" -Packages @("numpy", "pandas") -TrustedHost
+    Install-PackagesInMicromambaEnvironment -EnvName "langchain" -Packages @("numpy", "pandas") -TrustedHost
 #>
 function Install-PackagesInMicromambaEnvironment {
     param (
@@ -154,6 +163,9 @@ function Install-PackagesInMicromambaEnvironment {
     If provided, adds the --trusted-host flag to the pip install command for trusted hosts (pypi.org and files.pythonhosted.org).
     https://pip.pypa.io/en/stable/topics/https-certificates/#
 
+.OUTPUTS
+    [bool] indicates the micromamba environment was created
+
 .EXAMPLE
     Initialize-MicromambaEnvironment -EnvName "langchain"
 
@@ -215,7 +227,7 @@ function New-MicromambaEnvironment {
     If not provided, the script will be executed without additional arguments.
 
 .OUTPUTS
-    Returns a PowerShell object derived from the JSON output of the Python script.
+    Returns a [string] derived from the JSON output of the Python script.
 
 .NOTES
     This function uses the `micromamba` tool to activate the specified environment and execute the Python script.
@@ -272,19 +284,20 @@ function Invoke-PythonScript {
         [string[]]$Arguments = @() # Optional parameter with a default value
     )
 
-    Write-Host "Executing Python script: $ScriptPath" -ForegroundColor Yellow
+    # Write-Host "Executing Python script: $ScriptPath" -ForegroundColor Yellow
 
     try {
         # Construct the argument string by joining all arguments with spaces
         $ArgumentString = $Arguments -join ' '
 
         # Execute the Python script with the constructed argument string
-        $finalResult = & "$PSScriptRoot\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString *>&1 | ConvertFrom-Json
+        [string]$finalResult = & "$PSScriptRoot\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString
 
-        return $finalResult
-    } catch {
-        Write-Host "Error running Python script: $_" -ForegroundColor Red
-        return $null
+        return [string]$finalResult
+
+    } catch [System.Exception] {
+        # Write-Host "Error running Python script: $_" -ForegroundColor Red
+        return $_.Message
     }
 }
 
@@ -306,6 +319,9 @@ function Invoke-PythonScript {
     An optional URL to download the SHA256 checksum file. Defaults to:
     "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64.sha256"
 
+.OUTPUTS
+    [bool] indicating download was successful
+
 .EXAMPLE
     Get-MicromambaBinary
     Downloads, verifies, and extracts the micromamba binary from the default URLs.
@@ -313,9 +329,6 @@ function Invoke-PythonScript {
 .EXAMPLE
     Get-MicromambaBinary -Url "https://example.com/custom/micromamba.exe" -ChecksumUrl "https://example.com/custom/micromamba.sha256"
     Downloads, verifies, and extracts the micromamba binary from custom URLs.
-
-.NOTES
-    Ensure that the `tar` command is available in the environment if you use extracted tarballs in future versions.
 #>
 function Get-MicromambaBinary {
     param (
@@ -377,7 +390,7 @@ function Get-MicromambaBinary {
 .PARAMETER EnvName
     The name of the micromamba environment to remove.
 
-.RETURNS
+.OUTPUTS
     [bool] indicating if the cleanup was successful.
 
 .EXAMPLE
@@ -420,7 +433,7 @@ function Remove-MicromambaEnvironment {
     The `Remove-Micromamba` function deletes the `micromamba.exe` binary, the root prefix directory used by micromamba,
     and clears the `MAMBA_ROOT_PREFIX` environment variable.
 
-.RETURNS
+.OUTPUTS
     [bool] indicating if the removal was successful.
 
 .EXAMPLE
