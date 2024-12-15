@@ -1,24 +1,27 @@
 
 <#
 .SYNOPSIS
-Sets the MAMBA_ROOT_PREFIX environment variable for micromamba.
+    Sets the MAMBA_ROOT_PREFIX environment variable for micromamba.
 
 .DESCRIPTION
-The `Initialize-MambaRootPrefix` function sets the environment variable `MAMBA_ROOT_PREFIX` to the specified path for micromamba. If no path is specified, it defaults to the `$env:APPDATA\micromamba` directory. This environment variable is typically used by micromamba to define the root directory for its environments.
+    The `Initialize-MambaRootPrefix` function sets the environment variable `MAMBA_ROOT_PREFIX` to the specified path for micromamba. If no path is specified, it defaults to the `$env:APPDATA\micromamba` directory. This environment variable is typically used by micromamba to define the root directory for its environments.
 
 .PARAMETER MAMBA_ROOT_PREFIX
-The path to set for the `MAMBA_ROOT_PREFIX` environment variable. If not provided, the function defaults to `$env:APPDATA\micromamba`.
+    The path to set for the `MAMBA_ROOT_PREFIX` environment variable. If not provided, the function defaults to `$env:APPDATA\micromamba`.
+
+.OUTPUTS
+    $null
 
 .EXAMPLE
-Initialize-MambaRootPrefix -MAMBA_ROOT_PREFIX "C:\mamba"
-This will set the `MAMBA_ROOT_PREFIX` environment variable to "C:\mamba".
+    Initialize-MambaRootPrefix -MAMBA_ROOT_PREFIX "C:\mamba"
+    This will set the `MAMBA_ROOT_PREFIX` environment variable to "C:\mamba".
 
 .EXAMPLE
-Initialize-MambaRootPrefix
-This will set the `MAMBA_ROOT_PREFIX` environment variable to the default value of `$env:APPDATA\micromamba`.
+    Initialize-MambaRootPrefix
+    This will set the `MAMBA_ROOT_PREFIX` environment variable to the default value of `$env:APPDATA\micromamba`.
 
 .NOTES
-https://mamba.readthedocs.io/en/latest/user_guide/concepts.html#root-prefix
+    https://mamba.readthedocs.io/en/latest/user_guide/concepts.html#root-prefix
 #>
 function Initialize-MambaRootPrefix {
     param (
@@ -37,7 +40,7 @@ function Initialize-MambaRootPrefix {
 .PARAMETER EnvName
     The name of the micromamba environment to check.
 
-.RETURNS
+.OUTPUTS
     [bool] indicating if the environment exists.
 
 .EXAMPLE
@@ -68,11 +71,17 @@ function Test-MicromambaEnvironment {
     If provided, adds the --trusted-host flag to the pip install command for trusted hosts (pypi.org and files.pythonhosted.org).
     https://pip.pypa.io/en/stable/topics/https-certificates/#
 
+.OUTPUTS
+    [HASHTABLE[]]
+    keys:
+    - PackageName
+    - Success
+
 .EXAMPLE
     Install-PackagesInMicromambaEnvironment -EnvName "langchain" -Packages @("numpy", "pandas", "matplotlib")
 
 .EXAMPLE
-Install-PackagesInMicromambaEnvironment -EnvName "langchain" -Packages @("numpy", "pandas") -TrustedHost
+    Install-PackagesInMicromambaEnvironment -EnvName "langchain" -Packages @("numpy", "pandas") -TrustedHost
 #>
 function Install-PackagesInMicromambaEnvironment {
     param (
@@ -154,6 +163,9 @@ function Install-PackagesInMicromambaEnvironment {
     If provided, adds the --trusted-host flag to the pip install command for trusted hosts (pypi.org and files.pythonhosted.org).
     https://pip.pypa.io/en/stable/topics/https-certificates/#
 
+.OUTPUTS
+    [bool] indicates the micromamba environment was created
+
 .EXAMPLE
     Initialize-MicromambaEnvironment -EnvName "langchain"
 
@@ -215,7 +227,7 @@ function New-MicromambaEnvironment {
     If not provided, the script will be executed without additional arguments.
 
 .OUTPUTS
-    Returns a PowerShell object derived from the JSON output of the Python script.
+    Returns a [string] derived from the JSON output of the Python script.
 
 .NOTES
     This function uses the `micromamba` tool to activate the specified environment and execute the Python script.
@@ -272,7 +284,7 @@ function Invoke-PythonScript {
         [string[]]$Arguments = @() # Optional parameter with a default value
     )
 
-    Write-Host "Executing Python script: $ScriptPath" -ForegroundColor Yellow
+    # Write-Host "Executing Python script: $ScriptPath" -ForegroundColor Yellow
 
     try {
         # Construct the argument string by joining all arguments with spaces
@@ -281,10 +293,11 @@ function Invoke-PythonScript {
         # Execute the Python script with the constructed argument string
         $finalResult = & "$PSScriptRoot\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString *>&1 | ConvertFrom-Json
 
-        return $finalResult
-    } catch {
-        Write-Host "Error running Python script: $_" -ForegroundColor Red
-        return $null
+        return [string]$finalResult | ConvertTo-Json
+
+    } catch [System.Exception] {
+        # Write-Host "Error running Python script: $_" -ForegroundColor Red
+        return $_.Message
     }
 }
 
