@@ -319,6 +319,9 @@ function Invoke-PythonScript {
     An optional URL to download the SHA256 checksum file. Defaults to:
     "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64.sha256"
 
+.OUTPUTS
+    [bool] indicating download was successful
+
 .EXAMPLE
     Get-MicromambaBinary
     Downloads, verifies, and extracts the micromamba binary from the default URLs.
@@ -326,9 +329,6 @@ function Invoke-PythonScript {
 .EXAMPLE
     Get-MicromambaBinary -Url "https://example.com/custom/micromamba.exe" -ChecksumUrl "https://example.com/custom/micromamba.sha256"
     Downloads, verifies, and extracts the micromamba binary from custom URLs.
-
-.NOTES
-    Ensure that the `tar` command is available in the environment if you use extracted tarballs in future versions.
 #>
 function Get-MicromambaBinary {
     param (
@@ -390,7 +390,7 @@ function Get-MicromambaBinary {
 .PARAMETER EnvName
     The name of the micromamba environment to remove.
 
-.RETURNS
+.OUTPUTS
     [bool] indicating if the cleanup was successful.
 
 .EXAMPLE
@@ -433,7 +433,7 @@ function Remove-MicromambaEnvironment {
     The `Remove-Micromamba` function deletes the `micromamba.exe` binary, the root prefix directory used by micromamba,
     and clears the `MAMBA_ROOT_PREFIX` environment variable.
 
-.RETURNS
+.OUTPUTS
     [bool] indicating if the removal was successful.
 
 .EXAMPLE
