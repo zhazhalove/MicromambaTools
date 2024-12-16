@@ -35,7 +35,6 @@ function Initialize-MambaRootPrefix {
     $configContent = @"
 pkgs_dirs:
    - $env:MAMBA_ROOT_PREFIX\pkgs
-use_lockfiles: false
 "@
 
     Set-Content -Path $configPath -Value $configContent -Encoding UTF8
@@ -365,12 +364,12 @@ function Get-MicromambaBinary {
         # Verify both files exist
         if (-not (Test-Path -Path $binaryPath) ) {
             
-            throw [Exception]::new("Binary path NOT found - $binaryPath")
+            throw [System.Exception]::new("Binary path NOT found - $binaryPath")
         }
 
         if(-not (Test-Path -Path $checksumPath) ) {
 
-            throw [Exception]::new("Checksum path NOT found - $checksumPath")
+            throw [System.Exception]::new("Checksum path NOT found - $checksumPath")
         }
 
         # Read the checksum from the SHA256 file
@@ -382,7 +381,7 @@ function Get-MicromambaBinary {
         # Compare checksums
         if ($expectedChecksum -ne $actualChecksum) {
 
-            throw [Exception]::new("Checksum does NOT match - expected: $expectedChecksum  actual: $actualChecksum")
+            throw [System.Exception]::new("Checksum does NOT match - expected: $expectedChecksum  actual: $actualChecksum")
         }
 
         # Return success if everything checks out
