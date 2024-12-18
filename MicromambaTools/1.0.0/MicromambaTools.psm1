@@ -352,7 +352,7 @@ function Get-MicromambaBinary {
     try {
 
         if (-not (Test-Path $destinationPath) ) {
-            New-Item -Type Directory -Path $destinationPath -Force
+            New-Item -Type Directory -Path $destinationPath -Force | Out-Null
         }
 
         # Download the micromamba binary
