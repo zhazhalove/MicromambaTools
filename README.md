@@ -4,27 +4,36 @@ This PowerShell module simplifies the management of Python environments using Mi
 
 ## Installation
 
-1. Install the module into the Windows user module folder:
-   ```
-   C:\Users\<user>\Documents\WindowsPowerShell\Modules\
-   ```
+### Import Module
+
+Copy MicromambaTools module into the Windows user module folder:
+
+```
+C:\Users\<user>\Documents\WindowsPowerShell\Modules\
+```
 
 ## Usage
 
-### Step 1: Get Micromamba Binary
-
-Download the Micromamba binary using the following command:
-
-```powershell
-Get-MicromambaBinary
-```
-
-### Step 2: Initialize the Mamba Root Prefix
+### Step 1: Initialize the Mamba Root Prefix
 
 Initialize the Micromamba root prefix directory:
 
 ```powershell
 Initialize-MambaRootPrefix
+```
+
+OR
+
+```powershell
+Initialize-MambaRootPrefix -MAMBA_ROOT_PREFIX "$PWD\test01"
+```
+
+### Step 2: Get Micromamba Binary
+
+Download the Micromamba binary using the following command:
+
+```powershell
+Get-MicromambaBinary
 ```
 
 ### Step 3: Create a New Micromamba Environment
@@ -48,7 +57,15 @@ Test-MicromambaEnvironment -EnvName "langchain"
 Install required Python packages in the `langchain` environment:
 
 ```powershell
-Install-PackagesInMicromambaEnvironment -EnvName "langchain" -Packages @("langchain", "langchain-openai", "typer", "python-dotenv")
+Install-PackagesInMicromambaEnvironment -EnvName "langchain" -Packages @("langchain", "langchain-openai", "typer")
+```
+
+### Optional: Import Environment Variables
+
+If your Python script depends on environment variables stored in a `.env` file, you can import them using the `Import-DotEnv` function:
+
+```powershell
+Import-DotEnv -EnvFilePath "C:\path\to\.env"
 ```
 
 ### Step 6: Run a Python Script
