@@ -385,6 +385,71 @@ function Invoke-PythonScript {
     }
 }
 
+<#
+.SYNOPSIS
+    Imports a .env file and loads its key-value pairs as environment variables into the PowerShell runtime.
+
+.DESCRIPTION
+    The `Import-DotEnv` function reads a .env file, parses its contents, and sets each key-value pair as an
+    environment variable in the current PowerShell session. This allows the environment variables to be accessed
+    using `$env:`.
+
+.PARAMETER EnvFilePath
+    The path to the .env file. Defaults to the current directory's .env file if not specified.
+
+.EXAMPLE
+    # Import a .env file and load its key-value pairs as environment variables
+    Import-DotEnv -EnvFilePath "C:\path\to\.env"
+
+.EXAMPLE
+    # Import the default .env file in the current directory
+    Import-DotEnv
+
+.NOTES
+    - The function assumes the .env file uses the standard KEY=VALUE format.
+    - If the .env file is not found or cannot be read, the function will return `$false`.
+
+.LINK
+    https://12factor.net/config
+#>
+function Import-DotEnv {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $false)]
+        [string]$EnvFilePath = ".env"
+    )
+
+    try {
+        # Check if the .env file exists
+        if (-Not (Test-Path -Path $EnvFilePath)) {
+            return $false
+        }
+
+        # Read all lines from the .env file
+        $envContent = Get-Content -Path $EnvFilePath -ErrorAction Stop
+
+        # Parse each line for key-value pairs
+        foreach ($line in $envContent) {
+            if ($line -match "^(\w+)=(.+)$") {
+                $key = $matches[1]
+                $value = $matches[2]
+
+                # Remove surrounding quotes from the value if they exist
+                if ($value -match '^"(.*)"$') {
+                    $value = $matches[1]
+                }
+
+                # Set the environment variable in the current session using Set-Item
+                Set-Item -Path "Env:\$key" -Value $value
+            }
+        }
+
+        return $true
+    } catch {
+        return $false
+    }
+}
+
 
 <#
 .SYNOPSIS
@@ -587,4 +652,4 @@ function Remove-Micromamba {
 }
 
 
-Export-ModuleMember -Function Remove-Micromamba, Remove-MicromambaEnvironment Get-MicromambaBinary, Invoke-PythonScript, New-MicromambaEnvironment, Install-PackagesInMicromambaEnvironment, Test-MicromambaEnvironment, Initialize-MambaRootPrefix
+Export-ModuleMember -Function Import-DotEnv, Remove-Micromamba, Remove-MicromambaEnvironment Get-MicromambaBinary, Invoke-PythonScript, New-MicromambaEnvironment, Install-PackagesInMicromambaEnvironment, Test-MicromambaEnvironment, Initialize-MambaRootPrefix
