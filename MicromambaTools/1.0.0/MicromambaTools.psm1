@@ -215,102 +215,6 @@ function New-MicromambaEnvironment {
 }
 
 
-# <#
-# .SYNOPSIS
-#     Executes a Python script within a specified virtual environment using micromamba.
-
-# .DESCRIPTION
-#     The `Invoke-PythonScript` function is designed to run a Python script located at a specified path
-#     within a virtual environment created using micromamba. Optional arguments can be passed to the 
-#     Python script as a string array. The output is expected to be in JSON format, which will be 
-#     converted into a PowerShell object.
-
-# .PARAMETER ScriptPath
-#     The full path to the Python script to execute. This parameter is mandatory.
-
-# .PARAMETER EnvName
-#     The name of the micromamba environment to use for executing the Python script. This parameter is mandatory.
-
-# .PARAMETER Arguments
-#     An optional array of strings representing the arguments to pass to the Python script. 
-#     If not provided, the script will be executed without additional arguments.
-
-# .OUTPUTS
-#     Returns a [string] derived from the JSON output of the Python script.
-
-# .NOTES
-#     This function uses the `micromamba` tool to activate the specified environment and execute the Python script.
-#     The function assumes that the Python script outputs valid JSON.
-
-#     Author: [Your Name]
-#     Created: [Date]
-#     Version: 1.0
-
-# .EXAMPLE
-#     Example 1: Execute a Python script without additional arguments.
-    
-#     $scriptPath = "C:\Scripts\example_script.py"
-#     $envName = "example_env"
-    
-#     $result = Invoke-PythonScript -ScriptPath $scriptPath -EnvName $envName
-    
-#     Write-Output $result
-
-# .EXAMPLE
-#     Example 2: Execute a Python script with additional arguments.
-    
-#     $scriptPath = "C:\Scripts\example_script.py"
-#     $envName = "example_env"
-#     $arguments = @("--option1", "value1", "--option2", "value2")
-    
-#     $result = Invoke-PythonScript -ScriptPath $scriptPath -EnvName $envName -Arguments $arguments
-    
-#     Write-Output $result
-
-# .EXAMPLE
-#     Example 3: Handle errors when executing a Python script.
-    
-#     $scriptPath = "C:\Scripts\example_script.py"
-#     $envName = "example_env"
-    
-#     $result = Invoke-PythonScript -ScriptPath $scriptPath -EnvName $envName
-    
-#     if ($null -eq $result) {
-#         Write-Host "The script failed to execute." -ForegroundColor Red
-#     } else {
-#         Write-Output $result
-#     }
-# #>
-# function Invoke-PythonScript {
-#     param (
-#         [Parameter(Mandatory = $true)]
-#         [string]$ScriptPath,
-
-#         [Parameter(Mandatory = $true)]
-#         [string]$EnvName,
-
-#         [Parameter(Mandatory = $false)]
-#         [string[]]$Arguments = @() # Optional parameter with a default value
-#     )
-
-#     # Write-Host "Executing Python script: $ScriptPath" -ForegroundColor Yellow
-
-#     try {
-#         # Construct the argument string by joining all arguments with spaces
-#         $ArgumentString = $Arguments -join ' '
-
-#         # Execute the Python script with the constructed argument string
-#         [string]$finalResult = & "$env:MAMBA_ROOT_PREFIX\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString
-
-#         return [string]$finalResult
-
-#     } catch [System.Exception] {
-#         # Write-Host "Error running Python script: $_" -ForegroundColor Red
-#         return $_.Message
-#     }
-# }
-
-
 <#
 .SYNOPSIS
     Executes a Python script or a console script within a specified micromamba environment.
@@ -344,15 +248,13 @@ function New-MicromambaEnvironment {
     # Execute a script without additional arguments
     Invoke-PythonScript -ScriptPath "detection_coverage" -EnvName "langchain"
 
+
 .NOTES
     - Ensure that the micromamba environment is properly set up and contains the required scripts or modules.
     - Console scripts must be installed via the `setup.py` `entry_points` configuration.
 
 .OUTPUTS
     Returns the output of the executed script as a string. If an error occurs, the error message is returned.
-
-.LINK
-    https://mamba.readthedocs.io/
 #>
 function Invoke-PythonScript {
     param (
@@ -366,16 +268,19 @@ function Invoke-PythonScript {
         [string[]]$Arguments = @() # Optional parameter with a default value
     )
 
-    # Construct the argument string by joining all arguments with spaces
-    $ArgumentString = $Arguments -join ' '
 
     try {
+
+        # PowerShell automatically joins the elements of the array with spaces and executes the command with the provided arguments
+        $Command = @()
+        $Command += $Arguments | ForEach-Object { "`"$($_.ToString())`"" }
+
         if ($ScriptPath -match '\.py$') {
             # If it's a Python script
-            [string]$finalResult = & "$env:MAMBA_ROOT_PREFIX\micromamba.exe" run -n $EnvName python $ScriptPath $ArgumentString
+            [string]$finalResult = & "$env:MAMBA_ROOT_PREFIX\micromamba.exe" run -n $EnvName python $ScriptPath $Command
         } else {
             # If it's a console script
-            [string]$finalResult = & "$env:MAMBA_ROOT_PREFIX\micromamba.exe" run -n $EnvName $ScriptPath $ArgumentString
+            [string]$finalResult = & "$env:MAMBA_ROOT_PREFIX\micromamba.exe" run -n $EnvName $ScriptPath $Command
         }
 
         return [string]$finalResult
