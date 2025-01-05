@@ -268,12 +268,12 @@ function Invoke-PythonScript {
         [string[]]$Arguments = @() # Optional parameter with a default value
     )
 
-
     try {
+        # Convert multiline arguments into single-line strings
+        $SanitizedArguments = $Arguments | ForEach-Object { $_ -replace "`r?`n", " " }
 
-        # PowerShell automatically joins the elements of the array with spaces and executes the command with the provided arguments
-        $Command = @()
-        $Command += $Arguments | ForEach-Object { "`"$($_.ToString())`"" }
+        # Quote and join the sanitized arguments
+        $Command = $SanitizedArguments | ForEach-Object { "`"$($_.ToString())`"" }
 
         if ($ScriptPath -match '\.py$') {
             # If it's a Python script
@@ -289,6 +289,7 @@ function Invoke-PythonScript {
         return $_.Message
     }
 }
+
 
 <#
 .SYNOPSIS
