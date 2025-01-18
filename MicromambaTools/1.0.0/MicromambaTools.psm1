@@ -558,4 +558,4 @@ function Remove-Micromamba {
 }
 
 
-Export-ModuleMember -Function Import-DotEnv, Remove-Micromamba, Remove-MicromambaEnvironment Get-MicromambaBinary, Invoke-PythonScript, New-MicromambaEnvironment, Install-PackagesInMicromambaEnvironment, Test-MicromambaEnvironment, Initialize-MambaRootPrefix
+Export-ModuleMember -Function Import-DotEnv, Remove-Micromamba, Remove-MicromambaEnvironment, Get-MicromambaBinary, Invoke-PythonScript, New-MicromambaEnvironment, Install-PackagesInMicromambaEnvironment, Test-MicromambaEnvironment, Initialize-MambaRootPrefix
